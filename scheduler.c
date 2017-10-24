@@ -26,6 +26,7 @@ int privilege_counter = 0;
 int ran_term_num = 0;
 int terminated = 0;
 int currQuantumSize;
+int quantum_tick = 0; // Use for quantum length tracking
 
 /*
 	This function is our main loop. It creates a Scheduler object and follows the
@@ -51,15 +52,20 @@ void timer () {
 		totalProcesses += makePCBList(thisScheduler);		
 		
 		if (totalProcesses > 1) {
-			pc = runProcess(pc, currQuantumSize);
+			pc++; //= runProcess(pc, currQuantumSize);
 			sysstack = pc;
 			terminate(thisScheduler); 
-			pseudoISR(thisScheduler);
+			if(quantum_tick >= currQuantumSize)
+			{
+				pseudoISR(thisScheduler);
+				quantum_tick = 0;
+			}
 			pc = thisScheduler->running->context->pc;
 		}
 		
 		printSchedulerState(thisScheduler);
 		iterationCount++;
+		quantum_tick++;
 		/*if (count == stop) {
 			break;
 		} else {
@@ -139,10 +145,15 @@ unsigned int runProcess (unsigned int pc, int quantumSize) {
 
 
 void terminate(Scheduler theScheduler) {
-	ran_term_num = rand() % RANDOM_VALUE;
-		
+	//ran_term_num = rand() % RANDOM_VALUE;
+	/*	
 	if (theScheduler->running != NULL && ran_term_num <= MAX_VALUE_PRIVILEGED && isPrivileged(theScheduler->running) == 0) {
 		theScheduler->running->state = STATE_HALT;
+	}
+	*/
+	if(theScheduler->running != NULL && theScheduler->running->termination > 0)
+	{
+		
 	}
 	
 }
@@ -244,8 +255,8 @@ void resetReadyQueue (ReadyQueue queue) {
 	interrupted PCBs state to Ready and enqueue it into the Ready queue. It then
 	calls the dispatcher to get the next PCB in the queue.
 */
-void scheduling (int isTimer, Scheduler theScheduler) {
-	if (isTimer && theScheduler->running->state != STATE_HALT) {
+void scheduling (int interrupt_code, Scheduler theScheduler) {
+	if (interrupt_code = 1 && theScheduler->running->state != STATE_HALT) {
 		theScheduler->interrupted->state = STATE_READY;
 		if (theScheduler->interrupted->priority < (NUM_PRIORITIES - 1)) {
 			theScheduler->interrupted->priority++;
@@ -259,6 +270,10 @@ void scheduling (int isTimer, Scheduler theScheduler) {
 		if (index != 0) {
 			privileged[index] = theScheduler->running;
 		}
+	}
+	else if (interrupt_code = 2 && theScheduler->running->state != STATE_HALT)
+	{
+		// Do I/O trap handling
 	}
 	
 	if (theScheduler->running->state == STATE_HALT) {

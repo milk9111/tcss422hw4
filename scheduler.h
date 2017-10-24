@@ -29,6 +29,7 @@
 #define MIN_PC_JUMP 3000
 #define PC_JUMP_LIMIT 999
 #define IS_TIMER 1
+#define IS_IO_TRAP 2
 #define SWITCH_CALLS 4
 #define RESET_COUNT 10
 
