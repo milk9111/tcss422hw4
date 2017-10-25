@@ -85,4 +85,10 @@ void resetMLFQ(Scheduler theScheduler);
 
 void resetReadyQueue (ReadyQueue queue);
 
+int timerInterrupt (int);
+
+int ioTrap (int);
+
+int ioInterrupt (int);
+
 #endif

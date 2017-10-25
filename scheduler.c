@@ -77,6 +77,28 @@ void timer () {
 }
 
 
+void osLoop () {
+	int totalProcesses = 0, iterationCount = 1;
+	Scheduler thisScheduler = schedulerConstructor();
+	for(;;) {
+		thisScheduler->running->context->pc++;
+		
+		if (timerInterrupt()) {
+			pseudoISR(thisScheduler, IS_TIMER);
+			makePCBList (thisScheduler);
+		}
+		
+		if (ioTrap()) {
+			pseudoISR(thisScheduler, IS_IO_TRAP);
+		}
+		
+		if (ioInterrupt()) {
+			pseudoISR(thisScheduler, IS_IO_INTERRUPT);
+		}
+	}
+}
+
+
 /*
 	This creates the list of new PCBs for the current loop through. It simulates
 	the creation of each PCB, the changing of state to new, enqueueing into the
@@ -164,13 +186,13 @@ void terminate(Scheduler theScheduler) {
 	It handles changing the running PCB state to Interrupted, moving the running
 	PCB to interrupted, saving the PC to the SysStack and calling the scheduler.
 */
-void pseudoISR (Scheduler theScheduler) {
+void pseudoISR (Scheduler theScheduler, int interruptType) {
 	if (theScheduler->running->state != STATE_HALT) {
 		theScheduler->running->state = STATE_INT;
 		theScheduler->interrupted = theScheduler->running;
 		theScheduler->running->context->pc = sysstack;
 	}
-	scheduling(IS_TIMER, theScheduler);
+	scheduling(interruptType, theScheduler);
 	pseudoIRET(theScheduler);
 }
 
@@ -256,7 +278,7 @@ void resetReadyQueue (ReadyQueue queue) {
 	calls the dispatcher to get the next PCB in the queue.
 */
 void scheduling (int interrupt_code, Scheduler theScheduler) {
-	if (interrupt_code = 1 && theScheduler->running->state != STATE_HALT) {
+	if (interrupt_code == IS_TIMER && theScheduler->running->state != STATE_HALT) {
 		theScheduler->interrupted->state = STATE_READY;
 		if (theScheduler->interrupted->priority < (NUM_PRIORITIES - 1)) {
 			theScheduler->interrupted->priority++;

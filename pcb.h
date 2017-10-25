@@ -9,6 +9,7 @@
 #define PCB_H
 
 #define NUM_PRIORITIES 16
+#define TRAP_COUNT 4
 
 /* The CPU state, values named as in the LC-3 processor. */
 typedef struct cpu_context {
@@ -46,6 +47,14 @@ typedef struct pcb {
     unsigned char * mem; // start of process in memory
     unsigned int size; // number of bytes in process
     unsigned char channel_no; // which I/O device or service Q
+	unsigned int max_pc;
+	unsigned int creation;
+	unsigned int termination;
+	unsigned int creation;
+	unsigned int terminate;
+	unsigned int term_count;
+	unsigned int io_1_traps[TRAP_COUNT];
+	unsigned int io_2_traps[TRAP_COUNT];
     // if process is blocked, which queue it is in
     CPU_context_p context; // set of cpu registers
     // other items to be added as needed.

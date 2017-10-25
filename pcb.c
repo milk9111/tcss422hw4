@@ -9,6 +9,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<time.h>
 
 int global_largest_PID = 0;
 
@@ -33,7 +34,21 @@ void initialize_data(/* in-out */ PCB pcb) {
   pcb->context->r4 = 0;
   pcb->context->r5 = 0;
   pcb->context->r6 = 0;
-  pcb->context->r7 = 0;
+  pcb->context->r7 = 0
+  
+  /*pcb->max_pc;
+  pcb->creation;
+	pcb->termination;
+	pcb->creation;
+	pcb->terminate;
+  
+  time_t t;
+	srand((unsigned) time(&t));
+	int newRand = 0;
+  for (int i = 0; i < TRAP_COUNT; i++) {
+	newRand = rand() % max_pc;
+	//if (ioTrapContains(newRand)) {
+  }*/
 }
 
 /*
@@ -108,6 +123,7 @@ void PCB_assign_priority(/* in */ PCB the_pcb, /* in */ unsigned int the_priorit
         the_pcb->priority = NUM_PRIORITIES - 1;
     }
 }
+
 
 /*
  * Create and return a string representation of the provided PCB.
