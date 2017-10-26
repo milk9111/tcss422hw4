@@ -22,6 +22,7 @@ void initialize_data(/* in-out */ PCB pcb) {
   pcb->size = 0;
   pcb->channel_no = 0;
   pcb->state = 0;
+  pcb->blocked_timer = -1;
 
   pcb->mem = NULL;
 

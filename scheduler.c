@@ -27,6 +27,7 @@ int ran_term_num = 0;
 int terminated = 0;
 int currQuantumSize;
 int quantum_tick = 0; // Use for quantum length tracking
+int io_timer = 0;
 
 /*
 	This function is our main loop. It creates a Scheduler object and follows the
@@ -83,21 +84,74 @@ void osLoop () {
 	for(;;) {
 		thisScheduler->running->context->pc++;
 		
-		if (timerInterrupt()) {
+		if (timerInterrupt() == 1) {
 			pseudoISR(thisScheduler, IS_TIMER);
 			makePCBList (thisScheduler);
 		}
 		
-		if (ioTrap()) {
+		if (ioTrap(thisScheduler->running) == 1) {
 			pseudoISR(thisScheduler, IS_IO_TRAP);
 		}
 		
-		if (ioInterrupt()) {
+		if (ioInterrupt(thisScheduler->blocked) == 1) {
 			pseudoISR(thisScheduler, IS_IO_INTERRUPT);
 		}
 	}
 }
 
+int timerInterrupt()
+{
+	if (quantum_tick >= currQuantumSize)
+	{
+		quantum_tick = 0;
+		return 1;
+	}
+	else
+	{
+		quantum_tick++;
+		return 0;
+	}
+}
+
+int ioTrap(PCB current)
+{
+	int the_pc = current->context->pc;
+	int c;
+	for (c = 0; c < TRAP_COUNT; c++)
+	{
+		if(the_pc == current->io_1_traps[c])
+		{
+			return 1;
+		}
+	}
+	
+	for (c = 0; c < TRAP_COUNT; c++)
+	{
+		if(the_pc == current->io_2_traps[c])
+		{
+			return 1;
+		}
+	}
+}
+
+int ioInterrupt(ReadyQueue the_blocked)
+{
+	if (q_peek(the_blocked) != NULL)
+	{
+		PCB nextup = q_peek(the_blocked);
+		if (io_timer >= nextup->blocked_timer)
+		{
+			io_timer = 0;
+			return 1;
+		}
+		else
+		{
+			io_timer++;
+		}
+	}
+	
+	return 0;
+}
 
 /*
 	This creates the list of new PCBs for the current loop through. It simulates
@@ -293,9 +347,23 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 			privileged[index] = theScheduler->running;
 		}
 	}
-	else if (interrupt_code = 2 && theScheduler->running->state != STATE_HALT)
+	else if (interrupt_code == IS_IO_TRAP && theScheduler->running->state != STATE_HALT)
 	{
 		// Do I/O trap handling
+		int timer = currQuantumSize * (rand()%3+2) + rand()%500;
+		theScheduler->running->blocked_timer = timer;
+		theScheduler->running->state = STATE_WAIT;
+		q_enqueue(theScheduler->blocked, theScheduler->running);
+		
+		// schedule a new process
+	}
+	else if (interrupt_code == IS_IO_INTERRUPT && theScheduler->running->state != STATE_HALT)
+	{
+		// Do I/O interrupt handling
+		pq_enqueue(theScheduler->ready, q_dequeue(theScheduler->blocked));
+		theScheduler->running = theScheduler->interrupted;
+		theScheduler->running->state = STATE_RUNNING;
+		sysstack = theScheduler->running->context->pc;
 	}
 	
 	if (theScheduler->running->state == STATE_HALT) {
@@ -305,7 +373,12 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 		terminated++;
 	}
 	
-	theScheduler->running = pq_peek(theScheduler->ready);
+	// I/O interrupt does not require putting a new process
+	// into the running state, so we ignore this.
+	if(interrupt_code != IS_IO_INTERRUPT)
+	{
+		theScheduler->running = pq_peek(theScheduler->ready);
+	}
 	
 	if (terminated >= TOTAL_TERMINATED) {
 		while(!q_is_empty(theScheduler->killed)) {
@@ -313,7 +386,12 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 		}
 	}
 
-	dispatcher(theScheduler);
+	// I/O interrupt does not require putting a new process
+	// into the running state, so we ignore this.
+	if(interrupt_code != IS_IO_INTERRUPT) 
+	{
+		dispatcher(theScheduler);
+	}
 }
 
 

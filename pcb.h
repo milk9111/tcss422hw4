@@ -55,6 +55,7 @@ typedef struct pcb {
 	unsigned int term_count;
 	unsigned int io_1_traps[TRAP_COUNT];
 	unsigned int io_2_traps[TRAP_COUNT];
+	unsigned int blocked_timer;
     // if process is blocked, which queue it is in
     CPU_context_p context; // set of cpu registers
     // other items to be added as needed.
