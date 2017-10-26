@@ -10,6 +10,8 @@
 
 #define NUM_PRIORITIES 16
 #define TRAP_COUNT 4
+#define LARGEST_PC_POSSIBLE 5000
+#define SMALLEST_PC_POSSIBLE 300
 
 /* The CPU state, values named as in the LC-3 processor. */
 typedef struct cpu_context {
@@ -47,10 +49,9 @@ typedef struct pcb {
     unsigned char * mem; // start of process in memory
     unsigned int size; // number of bytes in process
     unsigned char channel_no; // which I/O device or service Q
-	unsigned int max_pc;
+	unsigned int max_pc; // this is essentially the quantum size
 	unsigned int creation;
 	unsigned int termination;
-	unsigned int creation;
 	unsigned int terminate;
 	unsigned int term_count;
 	unsigned int io_1_traps[TRAP_COUNT];
@@ -107,6 +108,12 @@ void PCB_assign_parent(PCB the_pcb, int pid);
  *            state: the new priority of the process.
  */
 void PCB_assign_priority(/* in */ PCB pcb, /* in */ unsigned int priority);
+
+int ioTrapContains(unsigned int, unsigned int[]);
+
+unsigned int makeMaxPC();
+
+void populateIOTraps (PCB, int);
 
 /*
  * Create and return a string representation of the provided PCB.

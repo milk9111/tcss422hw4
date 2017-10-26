@@ -17,40 +17,93 @@ int global_largest_PID = 0;
  * Helper function to iniialize PCB data.
  */
 void initialize_data(/* in-out */ PCB pcb) {
-  pcb->pid = 0;
-  PCB_assign_priority(pcb, 0);
-  pcb->size = 0;
-  pcb->channel_no = 0;
-  pcb->state = 0;
-  pcb->blocked_timer = -1;
+	pcb->pid = 0;
+	PCB_assign_priority(pcb, 0);
+	pcb->size = 0;
+	pcb->channel_no = 0;
+	pcb->state = 0;
+	pcb->blocked_timer = -1;
 
-  pcb->mem = NULL;
+	pcb->mem = NULL;
 
-  pcb->context->pc = 0;
-  pcb->context->ir = 0;
-  pcb->context->r0 = 0;
-  pcb->context->r1 = 0;
-  pcb->context->r2 = 0;
-  pcb->context->r3 = 0;
-  pcb->context->r4 = 0;
-  pcb->context->r5 = 0;
-  pcb->context->r6 = 0;
-  pcb->context->r7 = 0
+	pcb->context->pc = 0;
+	pcb->context->ir = 0;
+	pcb->context->r0 = 0;
+	pcb->context->r1 = 0;
+	pcb->context->r2 = 0;
+	pcb->context->r3 = 0;
+	pcb->context->r4 = 0;
+	pcb->context->r5 = 0;
+	pcb->context->r6 = 0;
+	pcb->context->r7 = 0;
   
-  /*pcb->max_pc;
-  pcb->creation;
-	pcb->termination;
-	pcb->creation;
-	pcb->terminate;
+	pcb->max_pc = makeMaxPC();
+	pcb->creation = 0;
+	pcb->termination = 0;
+	pcb->terminate = 0;
   
-  time_t t;
+	time_t t;
 	srand((unsigned) time(&t));
-	int newRand = 0;
-  for (int i = 0; i < TRAP_COUNT; i++) {
-	newRand = rand() % max_pc;
-	//if (ioTrapContains(newRand)) {
-  }*/
+	populateIOTraps (pcb, 0); // populates io_1_traps
+	populateIOTraps (pcb, 1); // populates io_2_traps
 }
+
+
+/*
+	A helper function to populate the IO Trap PC values for the pcb. Creates a random number 
+	that is less than the pcb's max PC value. While the random number is contained within either
+	pcb trap lists, the random number is incremented by one. Once a new number is created that is 
+	not within the two lists, it will be inserted into the next open position for the list specified
+	by the ioTrapType parameter.
+*/
+void populateIOTraps (PCB pcb, int ioTrapType) {
+	unsigned int newRand = 0;
+	for (int i = 0; i < TRAP_COUNT; i++) {
+		newRand = rand() % pcb->max_pc;
+		while (ioTrapContains(newRand, pcb->io_1_traps) || ioTrapContains(newRand, pcb->io_2_traps)) {
+			newRand++;
+		}
+		if (!ioTrapType) {
+			pcb->io_1_traps[i] = newRand;
+		} else {
+			pcb->io_2_traps[i] = newRand;
+		}
+	}
+}
+
+
+/*
+	Checks if the given random number is already within the given ioTraps array. If so,
+	return 1, otherwise 0.
+*/
+int ioTrapContains (unsigned int newRand, unsigned int ioTraps[]) {
+	unsigned int *ptr = ioTraps;
+	int isContained = 0;
+	
+	while (*ptr) {
+		if (*ptr == newRand) {
+			isContained = 1;
+			break;
+		}
+		ptr++;
+	}
+	
+	return isContained;
+}
+
+
+/*
+	Makes a random number between 0 and LARGEST_PC_POSSIBLE *found in pcb.h*.
+	If the number is less than SMALLEST_PC_POSSIBLE *found in pcb.h*, then maxPC will
+	be incremented by a new random number mod SMALLEST_PC_POSSIBLE then + SMALLEST_PC_POSSIBLE
+	and returned.
+*/
+unsigned int makeMaxPC () {
+	unsigned int maxPC = rand() % LARGEST_PC_POSSIBLE;
+	if (maxPC < SMALLEST_PC_POSSIBLE) maxPC += ((rand() % SMALLEST_PC_POSSIBLE) + SMALLEST_PC_POSSIBLE);
+	return maxPC;
+}
+
 
 /*
  * Allocate a PCB and a context for that PCB.
@@ -160,6 +213,17 @@ void toStringPCB(PCB thisPCB, int showCpu) {
 	
 	printf("priority: %d, ", thisPCB->priority);
 	printf("PC: 0x%04X, ", thisPCB->context->pc);
+	
+	printf("\nMAX PC: %d\n", pcb->max_pc);
+	printf("io_1_traps\n");
+	for (int i = 0; i < TRAP_COUNT; i++) {
+		printf("%d ", pcb->io_1_traps[i]);
+	}
+	printf("\nio_2_traps\n");
+	for (int i = 0; i < TRAP_COUNT; i++) {
+		printf("%d ", pcb->io_2_traps[i]);
+	}
+	printf("\n");
 	
 	if (showCpu) {
 		printf("mem: 0x%04X, ", thisPCB->mem);
