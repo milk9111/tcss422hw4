@@ -81,12 +81,15 @@ void timer () {
 void osLoop () {
 	int totalProcesses = 0, iterationCount = 1;
 	Scheduler thisScheduler = schedulerConstructor();
+	totalProcesses += makePCBList(thisScheduler);
 	for(;;) {
+		printf("Iteration: %d\r\n", iterationCount);
 		thisScheduler->running->context->pc++;
 		
 		if (timerInterrupt() == 1) {
 			pseudoISR(thisScheduler, IS_TIMER);
-			makePCBList (thisScheduler);
+			totalProcesses += makePCBList (thisScheduler);
+			iterationCount++;
 		}
 		
 		if (ioTrap(thisScheduler->running) == 1) {
@@ -96,9 +99,30 @@ void osLoop () {
 		if (ioInterrupt(thisScheduler->blocked) == 1) {
 			pseudoISR(thisScheduler, IS_IO_INTERRUPT);
 		}
+		
+		if (thisScheduler->running->context->pc == thisScheduler->running->max_pc) {
+			thisScheduler->running->context->pc = 0;
+		}
+		
+		if (!(iterationCount % RESET_COUNT)) {
+			printf("\r\nRESETTING MLFQ\r\n");
+			resetMLFQ(thisScheduler);
+		}
+		
+		if (totalProcesses >= MAX_PCB_TOTAL) {
+			printf("Reached max PCBs, ending Scheduler.\r\n");
+			break;
+		}
 	}
 }
 
+
+/*
+	Checks if the global quantum tick is greater than or equal to
+	the current quantum size for the running PCB. If so, then reset
+	the quantum tick to 0 and return 1 so the pseudoISR can occur.
+	If not, increase quantum tick by 1.
+*/
 int timerInterrupt()
 {
 	if (quantum_tick >= currQuantumSize)
@@ -113,9 +137,14 @@ int timerInterrupt()
 	}
 }
 
+
+/*
+	Checks if the current PCB's PC is one of the premade io_traps for this
+	PCB. If so, then return 1 so the pseudoISR can occur. If not, return 0.
+*/
 int ioTrap(PCB current)
 {
-	int the_pc = current->context->pc;
+	unsigned int the_pc = current->context->pc;
 	int c;
 	for (c = 0; c < TRAP_COUNT; c++)
 	{
@@ -132,7 +161,9 @@ int ioTrap(PCB current)
 			return 1;
 		}
 	}
+	return 0;
 }
+
 
 int ioInterrupt(ReadyQueue the_blocked)
 {
@@ -152,6 +183,7 @@ int ioInterrupt(ReadyQueue the_blocked)
 	
 	return 0;
 }
+
 
 /*
 	This creates the list of new PCBs for the current loop through. It simulates
@@ -195,6 +227,7 @@ int makePCBList (Scheduler theScheduler) {
 			theScheduler->running = pq_dequeue(theScheduler->ready);
 			theScheduler->running->state = STATE_RUNNING;
 			theScheduler->isNew = 0;
+			currQuantumSize = theScheduler->ready[0]->quantum_size;
 		}
 	}
 	
@@ -474,5 +507,5 @@ void main () {
 	sysstack = 0;
 	switchCalls = 0;
 	currQuantumSize = 0;
-	timer();
+	osLoop();
 }
