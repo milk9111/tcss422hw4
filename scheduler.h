@@ -23,7 +23,8 @@
 
 
 //defines
-#define MAX_PCB_TOTAL 5
+#define MAX_PCB_TOTAL 10
+#define RESET_COUNT 3
 #define MAX_PCB_IN_ROUND 5
 #define MAX_PC_JUMP 4000
 #define MIN_PC_JUMP 3000
@@ -32,7 +33,6 @@
 #define IS_IO_TRAP 2
 #define IS_IO_INTERRUPT 3
 #define SWITCH_CALLS 4
-#define RESET_COUNT 10
 
 
 //structs
@@ -86,7 +86,7 @@ void resetMLFQ(Scheduler theScheduler);
 
 void resetReadyQueue (ReadyQueue queue);
 
-int timerInterrupt ();
+int timerInterrupt (int);
 
 int ioTrap (PCB);
 

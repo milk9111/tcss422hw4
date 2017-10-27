@@ -43,8 +43,8 @@ void initialize_data(/* in-out */ PCB pcb) {
 	pcb->terminate = rand() % MAX_TERM_COUNT;
 	pcb->term_count = 0;
   
-	time_t t;
-	srand((unsigned) time(&t));
+	//time_t t;
+	//srand((unsigned) time(&t));
 	populateIOTraps (pcb, 0); // populates io_1_traps
 	populateIOTraps (pcb, 1); // populates io_2_traps
 }
@@ -224,6 +224,8 @@ void toStringPCB(PCB thisPCB, int showCpu) {
 	for (int i = 0; i < TRAP_COUNT; i++) {
 		printf("%d ", thisPCB->io_2_traps[i]);
 	}
+	printf("terminate: %d\n", thisPCB->terminate);
+	printf("term_count: %d\n", thisPCB->term_count);
 	printf("\n");
 	
 	if (showCpu) {
