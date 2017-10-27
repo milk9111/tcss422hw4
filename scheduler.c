@@ -113,6 +113,7 @@ void osLoop () {
 		}
 	
 		// if running PCB's terminate == running PCB's term_count, then terminate (for real).
+		terminate(thisScheduler);
 		
 		if (!(iterationCount % RESET_COUNT)) {
 			printf("\r\nRESETTING MLFQ\r\n");
@@ -273,9 +274,10 @@ void terminate(Scheduler theScheduler) {
 		theScheduler->running->state = STATE_HALT;
 	}
 	*/
-	if(theScheduler->running != NULL && theScheduler->running->terminate > 0)
+	if(theScheduler->running != NULL && theScheduler->running->terminate > 0 && theScheduler->running->terminate == theScheduler->running->term_count)
 	{
-		
+		theScheduler->running->state = STATE_HALT;
+		scheduling(-1, theScheduler);	
 	}
 	
 }
