@@ -40,7 +40,8 @@ void initialize_data(/* in-out */ PCB pcb) {
 	pcb->max_pc = makeMaxPC();
 	pcb->creation = 0;
 	pcb->termination = 0;
-	pcb->terminate = 0;
+	pcb->terminate = rand() % MAX_TERM_COUNT;
+	pcb->term_count = 0;
   
 	time_t t;
 	srand((unsigned) time(&t));
@@ -214,14 +215,14 @@ void toStringPCB(PCB thisPCB, int showCpu) {
 	printf("priority: %d, ", thisPCB->priority);
 	printf("PC: 0x%04X, ", thisPCB->context->pc);
 	
-	printf("\nMAX PC: %d\n", pcb->max_pc);
+	printf("\nMAX PC: %d\n", thisPCB->max_pc);
 	printf("io_1_traps\n");
 	for (int i = 0; i < TRAP_COUNT; i++) {
-		printf("%d ", pcb->io_1_traps[i]);
+		printf("%d ", thisPCB->io_1_traps[i]);
 	}
 	printf("\nio_2_traps\n");
 	for (int i = 0; i < TRAP_COUNT; i++) {
-		printf("%d ", pcb->io_2_traps[i]);
+		printf("%d ", thisPCB->io_2_traps[i]);
 	}
 	printf("\n");
 	
@@ -249,40 +250,3 @@ void toStringCPUContext(CPU_context_p context) {
 	printf("r7:  %d\r\n", context->r7);
 }
  
-/*char * toStringPCB(/* in  PCB the_pcb, int showAll) {
-    /* Oversized buffer for creating the initial version of the string. 
-    char temp_buf[1000];
-    unsigned int cpos = 0;
-
-	if (showAll) {
-		cpos += sprintf(temp_buf, "contents: PID: %d, Priority: %d, state: %u, "
-				"memloc: %p size: %u channel: %X ",
-				the_pcb->pid, the_pcb->priority, the_pcb->state,
-				the_pcb->mem, the_pcb->size, the_pcb->channel_no);
-
-		/* Append the context: 
-		sprintf(temp_buf + cpos, "PC: 0x%04X, IR: %04X, "
-				"r0: %04X, r1: %04X, r2: %04X, r3: %04X, r4: %04X, "
-				"r5: %04X, r6: %04X, r7: %04X",
-				the_pcb->context->pc, the_pcb->context->ir, the_pcb->context->r0,
-				the_pcb->context->r1, the_pcb->context->r2, the_pcb->context->r3,
-				the_pcb->context->r4, the_pcb->context->r5, the_pcb->context->r6,
-				the_pcb->context->r7);
-	} else {
-		cpos += sprintf(temp_buf, "contents: PID: %d, Priority: %d, state: %u, "
-				"memloc: %p ", the_pcb->pid, the_pcb->priority, the_pcb->state, the_pcb->mem);
-
-		/* Append the context: 
-		sprintf(temp_buf + cpos, "PC: 0x%04X", the_pcb->context->pc);
-	}
-	
-    /* A string that can be returned and -not- go out of scope. 
-    char * ret_val = malloc(sizeof(char) * (strlen(temp_buf) + 1));
-
-    /* Make sure ret_val is not null before populating it. 
-    if (ret_val != NULL) {
-        strcpy(ret_val, temp_buf);
-    }
-
-    return ret_val;
-}*/

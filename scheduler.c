@@ -29,14 +29,8 @@ int currQuantumSize;
 int quantum_tick = 0; // Use for quantum length tracking
 int io_timer = 0;
 
-/*
-	This function is our main loop. It creates a Scheduler object and follows the
-	steps a normal Round Robin Scheduler would to "run" for a certain length of time,
-	push new PC onto stack when timer interrupt occurs, then call the ISR, scheduler,
-	dispatcher, and eventually an IRET to return to the top of the loop and start
-	with the new process.
-*/
-void timer () {
+
+/*void timer () {
 	unsigned int pc = 0;
 	int totalProcesses = 0, iterationCount = 1;
 	Scheduler thisScheduler = schedulerConstructor();
@@ -67,17 +61,20 @@ void timer () {
 		printSchedulerState(thisScheduler);
 		iterationCount++;
 		quantum_tick++;
-		/*if (count == stop) {
-			break;
-		} else {
-			count++;
-		}*/
+		
 		
 	}
 	schedulerDeconstructor(thisScheduler);
-}
+}*/
 
 
+/*
+	This function is our main loop. It creates a Scheduler object and follows the
+	steps a normal MLFQ Priority Scheduler would to "run" for a certain length of time,
+	check for all interrupt types, then call the ISR, scheduler,
+	dispatcher, and eventually an IRET to return to the top of the loop and start
+	with the new process.
+*/
 void osLoop () {
 	int totalProcesses = 0, iterationCount = 1;
 	Scheduler thisScheduler = schedulerConstructor();
@@ -97,12 +94,16 @@ void osLoop () {
 		}
 		
 		if (ioInterrupt(thisScheduler->blocked) == 1) {
+			printf("here\n");
 			pseudoISR(thisScheduler, IS_IO_INTERRUPT);
 		}
 		
 		if (thisScheduler->running->context->pc == thisScheduler->running->max_pc) {
 			thisScheduler->running->context->pc = 0;
+			thisScheduler->running->term_count++;	//if terminate value is > 0
 		}
+	
+		// if running PCB's terminate == running PCB's term_count, then terminate (for real).
 		
 		if (!(iterationCount % RESET_COUNT)) {
 			printf("\r\nRESETTING MLFQ\r\n");
@@ -167,8 +168,10 @@ int ioTrap(PCB current)
 
 int ioInterrupt(ReadyQueue the_blocked)
 {
-	if (q_peek(the_blocked) != NULL)
+	printf("here2\n");
+	if (the_blocked->first_node != NULL && q_peek(the_blocked) != NULL)
 	{
+		printf("here3\n");
 		PCB nextup = q_peek(the_blocked);
 		if (io_timer >= nextup->blocked_timer)
 		{
@@ -227,7 +230,7 @@ int makePCBList (Scheduler theScheduler) {
 			theScheduler->running = pq_dequeue(theScheduler->ready);
 			theScheduler->running->state = STATE_RUNNING;
 			theScheduler->isNew = 0;
-			currQuantumSize = theScheduler->ready[0]->quantum_size;
+			currQuantumSize = theScheduler->ready->queues[0]->quantum_size;
 		}
 	}
 	
@@ -260,7 +263,7 @@ void terminate(Scheduler theScheduler) {
 		theScheduler->running->state = STATE_HALT;
 	}
 	*/
-	if(theScheduler->running != NULL && theScheduler->running->termination > 0)
+	if(theScheduler->running != NULL && theScheduler->running->terminate > 0)
 	{
 		
 	}

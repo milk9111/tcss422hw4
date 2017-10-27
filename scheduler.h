@@ -30,6 +30,7 @@
 #define PC_JUMP_LIMIT 999
 #define IS_TIMER 1
 #define IS_IO_TRAP 2
+#define IS_IO_INTERRUPT 3
 #define SWITCH_CALLS 4
 #define RESET_COUNT 10
 
@@ -63,7 +64,7 @@ int makePCBList (Scheduler);
 
 unsigned int runProcess (unsigned int, int);
 
-void pseudoISR (Scheduler);
+void pseudoISR (Scheduler, int);
 
 void scheduling (int, Scheduler);
 
