@@ -28,6 +28,7 @@ int terminated = 0;
 int currQuantumSize;
 int quantum_tick = 0; // Use for quantum length tracking
 int io_timer = 0;
+time_t t;
 
 
 /*void timer () {
@@ -80,22 +81,30 @@ void osLoop () {
 	Scheduler thisScheduler = schedulerConstructor();
 	totalProcesses += makePCBList(thisScheduler);
 	for(;;) {
-		printf("Iteration: %d\r\n", iterationCount);
 		thisScheduler->running->context->pc++;
 		
 		if (timerInterrupt() == 1) {
+			printf("Iteration: %d\r\n", iterationCount);
+			printf("Initiating Timer Interrupt\n");
 			pseudoISR(thisScheduler, IS_TIMER);
 			totalProcesses += makePCBList (thisScheduler);
 			iterationCount++;
+			printSchedulerState(thisScheduler);
 		}
 		
 		if (ioTrap(thisScheduler->running) == 1) {
+			printf("Iteration: %d\r\n", iterationCount);
+			printf("Initiating I/O Trap\n");
 			pseudoISR(thisScheduler, IS_IO_TRAP);
+			printSchedulerState(thisScheduler);
 		}
 		
 		if (ioInterrupt(thisScheduler->blocked) == 1) {
+			printf("Iteration: %d\r\n", iterationCount);
+			printf("Initiating I/O Interrupt\n");
 			printf("here\n");
 			pseudoISR(thisScheduler, IS_IO_INTERRUPT);
+			printSchedulerState(thisScheduler);
 		}
 		
 		if (thisScheduler->running->context->pc == thisScheduler->running->max_pc) {
@@ -108,6 +117,7 @@ void osLoop () {
 		if (!(iterationCount % RESET_COUNT)) {
 			printf("\r\nRESETTING MLFQ\r\n");
 			resetMLFQ(thisScheduler);
+			printSchedulerState(thisScheduler);
 		}
 		
 		if (totalProcesses >= MAX_PCB_TOTAL) {
@@ -505,7 +515,6 @@ int isPrivileged(PCB pcb) {
 
 void main () {
 	setvbuf(stdout, NULL, _IONBF, 0);
-	time_t t;
 	srand((unsigned) time(&t));
 	sysstack = 0;
 	switchCalls = 0;
