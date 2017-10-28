@@ -2,11 +2,11 @@
 	10/28/2017
 	Authors: Connor Lundberg, Jacob Ackerman
 	
-	In this project we will be making a simple Round Robin scheduling algorithm
-	that will take a single ReadyQueue of PCBs and run them through our scheduler.
-	It will simulate the "running" of the process by randomly changing the PC value
-	of the process as well as incorporating various interrupts to show the effects
-	it has on the scheduling simulator.
+	In this project we will be making an MLFQ scheduling algorithm
+	that will take a PriorityQueue of PCBs and run them through our scheduler.
+	It will simulate the "running" of the process by incrementing the running PCB's PCB 
+	by one on each loop through. It will also incorporate various interrupts to show 
+	the effects it has on the scheduling simulator.
 	
 	This file holds the definitions of structs and declarations functions for the 
 	scheduler.c file.
@@ -23,8 +23,8 @@
 
 
 //defines
-#define MAX_PCB_TOTAL 10
-#define RESET_COUNT 3
+#define MAX_PCB_TOTAL 30
+#define RESET_COUNT 15
 #define MAX_PCB_IN_ROUND 5
 #define MAX_PC_JUMP 4000
 #define MIN_PC_JUMP 3000
@@ -35,15 +35,8 @@
 #define SWITCH_CALLS 4
 
 
+
 //structs
-/*typedef struct created_list_node {
-	PCB pcb;
-}
-
-typedef struct created_list {
-	
-}*/
-
 typedef struct scheduler {
 	ReadyQueue created;
 	ReadyQueue killed;
@@ -58,8 +51,6 @@ typedef scheduler_s * Scheduler;
 
 
 //declarations
-void timer ();
-
 int makePCBList (Scheduler);
 
 unsigned int runProcess (unsigned int, int);
@@ -86,10 +77,5 @@ void resetMLFQ(Scheduler theScheduler);
 
 void resetReadyQueue (ReadyQueue queue);
 
-int timerInterrupt (int);
-
-int ioTrap (PCB);
-
-int ioInterrupt (ReadyQueue);
 
 #endif

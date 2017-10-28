@@ -66,7 +66,7 @@ void setQuantumSize (ReadyQueue queue, int quantumSize) {
  */
 PCB q_peek(ReadyQueue FIFOq) {
 	PCB headPCB = NULL;
-	if (!(FIFOq->first_node)) {
+	if (FIFOq->first_node) {
 		headPCB = FIFOq->first_node->pcb;
 	}
 	return headPCB;

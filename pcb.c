@@ -213,18 +213,18 @@ void toStringPCB(PCB thisPCB, int showCpu) {
 	printf("priority: %d, ", thisPCB->priority);
 	printf("PC: 0x%04X, ", thisPCB->context->pc);
 	
-	printf("\nMAX PC: %d\n", thisPCB->max_pc);
+	printf("\r\nMAX PC: %d\r\n", thisPCB->max_pc);
 	printf("io_1_traps\n");
 	for (int i = 0; i < TRAP_COUNT; i++) {
 		printf("%d ", thisPCB->io_1_traps[i]);
 	}
-	printf("\nio_2_traps\n");
+	printf("\r\nio_2_traps\r\n");
 	for (int i = 0; i < TRAP_COUNT; i++) {
 		printf("%d ", thisPCB->io_2_traps[i]);
 	}
-	printf("terminate: %d\n", thisPCB->terminate);
-	printf("term_count: %d\n", thisPCB->term_count);
-	printf("\n");
+	printf("\r\nterminate: %d\r\n", thisPCB->terminate);
+	printf("term_count: %d\r\n", thisPCB->term_count);
+	printf("\r\n");
 	
 	if (showCpu) {
 		printf("mem: 0x%04X, ", thisPCB->mem);

@@ -2,21 +2,17 @@
 	10/28/2017
 	Authors: Connor Lundberg, Jacob Ackerman
 	
-	In this project we will be making a simple Round Robin scheduling algorithm
-	that will take a single ReadyQueue of PCBs and run them through our scheduler.
-	It will simulate the "running" of the process by randomly changing the PC value
-	of the process as well as incorporating various interrupts to show the effects
-	it has on the scheduling simulator.
+	In this project we will be making an MLFQ scheduling algorithm
+	that will take a PriorityQueue of PCBs and run them through our scheduler.
+	It will simulate the "running" of the process by incrementing the running PCB's PCB 
+	by one on each loop through. It will also incorporate various interrupts to show 
+	the effects it has on the scheduling simulator.
 	
 	This file holds the defined functions declared in the scheduler.h header file.
 */
 
 #include "scheduler.h"
 
-#define MAX_VALUE_PRIVILEGED 15
-#define RANDOM_VALUE 101
-#define TOTAL_TERMINATED 10
-#define MAX_PRIVILEGE 4
 
 unsigned int sysstack;
 int switchCalls;
@@ -69,148 +65,7 @@ time_t t;
 }*/
 
 
-/*
-	This function is our main loop. It creates a Scheduler object and follows the
-	steps a normal MLFQ Priority Scheduler would to "run" for a certain length of time,
-	check for all interrupt types, then call the ISR, scheduler,
-	dispatcher, and eventually an IRET to return to the top of the loop and start
-	with the new process.
-*/
-void osLoop () {
-	int totalProcesses = 0, iterationCount = 1;
-	Scheduler thisScheduler = schedulerConstructor();
-	totalProcesses += makePCBList(thisScheduler);
-	printSchedulerState(thisScheduler);
-	for(;;) {
-		if (thisScheduler->running) { // In case the first makePCBList makes 0 PCBs
-			thisScheduler->running->context->pc++;
-			
-			if (timerInterrupt(iterationCount) == 1) {
-				pseudoISR(thisScheduler, IS_TIMER);
-				printf("Completed Timer Interrupt\n");
-				printSchedulerState(thisScheduler);
-				iterationCount++;
-			}
-			
-			if (ioTrap(thisScheduler->running) == 1) {
-				printf("Iteration: %d\r\n", iterationCount);
-				printf("Initiating I/O Trap\r\n");
-				printf("I/O Trap PC: %d\r\n", thisScheduler->running->context->pc);
-				pseudoISR(thisScheduler, IS_IO_TRAP);
-				printf("Completed I/O Trap\n");
-				printSchedulerState(thisScheduler);
-				iterationCount++;
-			}
-			
-			if (ioInterrupt(thisScheduler->blocked) == 1) {
-				printf("Iteration: %d\r\n", iterationCount);
-				printf("Initiating I/O Interrupt\n");
-				pseudoISR(thisScheduler, IS_IO_INTERRUPT);
-				printf("Completed I/O Interrupt\n");
-				printSchedulerState(thisScheduler);
-				iterationCount++;
-			}
-			
-			if (thisScheduler->running->context->pc == thisScheduler->running->max_pc) {
-				thisScheduler->running->context->pc = 0;
-				thisScheduler->running->term_count++;	//if terminate value is > 0
-			}
-		} else {
-			iterationCount++;
-		}
-	
-		// if running PCB's terminate == running PCB's term_count, then terminate (for real).
-		terminate(thisScheduler);
-		
-		if (!(iterationCount % RESET_COUNT)) {
-			printf("\r\nRESETTING MLFQ\r\n");
-			printf("iterationCount: %d\n", iterationCount);
-			resetMLFQ(thisScheduler);
-			totalProcesses += makePCBList (thisScheduler);
-			printSchedulerState(thisScheduler);
-			iterationCount = 1;
-		}
-		
-		if (totalProcesses >= MAX_PCB_TOTAL) {
-			printf("Reached max PCBs, ending Scheduler.\r\n");
-			break;
-		}
-	}
-}
 
-
-/*
-	Checks if the global quantum tick is greater than or equal to
-	the current quantum size for the running PCB. If so, then reset
-	the quantum tick to 0 and return 1 so the pseudoISR can occur.
-	If not, increase quantum tick by 1.
-*/
-int timerInterrupt(int iterationCount)
-{
-	if (quantum_tick >= currQuantumSize)
-	{
-		printf("Iteration: %d\r\n", iterationCount);
-		printf("Initiating Timer Interrupt\n");
-		printf("Current quantum tick: %d\r\n", quantum_tick);
-		quantum_tick = 0;
-		return 1;
-	}
-	else
-	{
-		quantum_tick++;
-		return 0;
-	}
-}
-
-
-/*
-	Checks if the current PCB's PC is one of the premade io_traps for this
-	PCB. If so, then return 1 so the pseudoISR can occur. If not, return 0.
-*/
-int ioTrap(PCB current)
-{
-	unsigned int the_pc = current->context->pc;
-	int c;
-	for (c = 0; c < TRAP_COUNT; c++)
-	{
-		if(the_pc == current->io_1_traps[c])
-		{
-			return 1;
-		}
-	}
-	
-	for (c = 0; c < TRAP_COUNT; c++)
-	{
-		if(the_pc == current->io_2_traps[c])
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
-
-int ioInterrupt(ReadyQueue the_blocked)
-{
-	//printf("here2\n");
-	//printf("currQuantumSize: %d, quantum_tick: %d\n", currQuantumSize, quantum_tick);
-	if (the_blocked->first_node != NULL && q_peek(the_blocked) != NULL)
-	{
-		//printf("here3\n");
-		PCB nextup = q_peek(the_blocked);
-		if (io_timer >= nextup->blocked_timer)
-		{
-			io_timer = 0;
-			return 1;
-		}
-		else
-		{
-			io_timer++;
-		}
-	}
-	
-	return 0;
-}
 
 
 /*
@@ -220,7 +75,7 @@ int ioInterrupt(ReadyQueue the_blocked)
 */
 int makePCBList (Scheduler theScheduler) {
 	int newPCBCount = rand() % MAX_PCB_IN_ROUND;
-	//int newPCBCount = 1;
+	//int newPCBCount = 3;
 	
 	int lottery = rand();
 	for (int i = 0; i < newPCBCount; i++) {
@@ -228,14 +83,12 @@ int makePCBList (Scheduler theScheduler) {
 		newPCB->state = STATE_NEW;
 		q_enqueue(theScheduler->created, newPCB);
 		
-		// creates privileged pcb
-		if (privilege_counter < 4 && lottery % 7 == 0) {
+		// creates privileged pcb (from HW3)
+		/*if (privilege_counter < 4 && lottery % 7 == 0) {
 			privileged[privilege_counter] = newPCB;
 			// printf("PRIVILEGE PID: %d\n", privileged[privilege_counter]->pid);
-		
-			
 			privilege_counter++;
-		}
+		}*/
 	}
 	printf("Making New PCBs: \r\n");
 	if (newPCBCount) {
@@ -319,6 +172,7 @@ void pseudoISR (Scheduler theScheduler, int interruptType) {
 	the current list of "privileged PCBs" that will not be terminated.
 */
 void printSchedulerState (Scheduler theScheduler) {
+	printf("MLFQ State\r\n");
 	toStringPriorityQueue(theScheduler->ready);
 	printf("\r\n");
 	
@@ -335,7 +189,7 @@ void printSchedulerState (Scheduler theScheduler) {
 	printf("\r\n");
 	
 	if (pq_peek(theScheduler->ready)) {
-		printf("Going to be running next ");
+		printf("Going to be running ");
 		toStringPCB(theScheduler->running, 0);
 		printf("\r\n");
 		printf("Next highest priority PCB ");
@@ -345,6 +199,8 @@ void printSchedulerState (Scheduler theScheduler) {
 		printf("Going to be running next ");
 		if (theScheduler->running) {
 			toStringPCB(theScheduler->running, 0);
+		} else {
+			printf("\r\n");
 		}
 
 		printf("Next highest priority PCB contents: The MLFQ is empty!\r\n");

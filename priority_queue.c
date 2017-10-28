@@ -161,7 +161,7 @@ char pq_is_empty(PriorityQueue PQ) {
  void toStringPriorityQueue(PriorityQueue PQ) {
 	printf("\r\n");
 	for (int i = 0; i < NUM_PRIORITIES; i++) {
-		printf("Q%2d: Count=%d, Quantum Size: %d\r\n", i, PQ->queues[i]->size, PQ->queues[i]->quantum_size);
+		printf("Q%2d: Count=%d, QuantumSize=%d\r\n", i, PQ->queues[i]->size, PQ->queues[i]->quantum_size);
 		//toStringReadyQueue(PQ->queues[i]);
 	}
 	printf("\r\n");
