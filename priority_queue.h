@@ -1,8 +1,6 @@
 /*
- * Project 1
- *
- * Authors: Keegan Wantz, Carter Odem, Connor Lundberg
- * TCSS 422.
+    10/28/2017
+	Authors: Connor Lundberg, Jacob Ackerman
  */
 
 #ifndef PRIORITY_QUEUE_H
