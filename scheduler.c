@@ -71,8 +71,8 @@ void osLoop () {
 				iterationCount++;
 			}
 			//printf("PC After interrupt check: %d\n", thisScheduler->running->context->pc);
-			if (thisScheduler->running && thisScheduler->running->context->pc == thisScheduler->running->max_pc) {
-				//printf("made it here\n");
+			if (thisScheduler->running != NULL && thisScheduler->running->context->pc >= thisScheduler->running->max_pc) {
+				printf("made it here\n");
 				//exit(0);
 				thisScheduler->running->context->pc = 0;
 				thisScheduler->running->term_count++;	//if terminate value is > 0
@@ -249,7 +249,9 @@ void terminate(Scheduler theScheduler) {
 	//ran_term_num = rand() % RANDOM_VALUE;
 	if(theScheduler->running != NULL && theScheduler->running->terminate > 0 && theScheduler->running->terminate == theScheduler->running->term_count)
 	{
+		printf("Marking for termination...\n");
 		theScheduler->running->state = STATE_HALT;
+		printf("...\n");
 		scheduling(IS_TERMINATING, theScheduler);	
 		//pseudoISR(theScheduler, IS_TERMINATING);
 	}
@@ -410,11 +412,11 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 		sysstack = theScheduler->running->context->pc;
 	}
 	
-	if (theScheduler->interrupted->state == STATE_HALT) {
+	if (theScheduler->running->state == STATE_HALT) {
 		printf("\r\nEnqueueing into Killed queue ");
 		//toStringPCB(q_peek(theScheduler->blocked), 0);
-		q_enqueue(theScheduler->killed, theScheduler->interrupted);
-		theScheduler->interrupted = NULL;
+		q_enqueue(theScheduler->killed, theScheduler->running);
+		theScheduler->running = NULL;
 		
 		//terminated++;
 	}
