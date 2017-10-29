@@ -8,8 +8,8 @@
 
 #define NUM_PRIORITIES 16
 #define TRAP_COUNT 4
-#define LARGEST_PC_POSSIBLE 5000
-#define SMALLEST_PC_POSSIBLE 300
+#define LARGEST_PC_POSSIBLE 200
+#define SMALLEST_PC_POSSIBLE 30
 #define MAX_TERM_COUNT 20
 
 /* The CPU state, values named as in the LC-3 processor. */

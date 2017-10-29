@@ -12,8 +12,8 @@
 	is being used to reduce the size of scheduler.c for readability and management.
 */
 
-#ifndef SCHEDULER_H
-#define SCHEDULER_H
+#ifndef OS_LOOP_H
+#define OS_LOOP_H
 
 
 //includes
@@ -24,13 +24,7 @@
 #include <time.h>
 
 
-//defines
-#define MAX_VALUE_PRIVILEGED 15
-#define RANDOM_VALUE 101
-#define TOTAL_TERMINATED 10
-#define MAX_PRIVILEGE 4
-
-
+//declarations
 void osLoop ();
 
 int timerInterrupt (int);

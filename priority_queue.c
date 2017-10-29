@@ -11,7 +11,7 @@
 
 #define ADDITIONAL_ROOM_FOR_TOSTR 4
 #define PRIORITY_JUMP_EXTRA 1000
-#define MIN_PRIORITY_JUMP 100
+#define MIN_PRIORITY_JUMP 500
 
 /*
  * Creates a priority queue.

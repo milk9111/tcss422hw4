@@ -15,6 +15,54 @@
 #include "os_loop.h"
 
 
+unsigned int sysstack;
+int switchCalls;
+int ran_term_num = 0;
+int terminated = 0;
+int currQuantumSize;
+int quantum_tick = 0; // Use for quantum length tracking
+int io_timer = 0;
+time_t t;
+
+//This was the HW3 loop. This is here for reference when making the new loop.
+/*void timer () {
+	unsigned int pc = 0;
+	int totalProcesses = 0, iterationCount = 1;
+	Scheduler thisScheduler = schedulerConstructor();
+	for (;;) {
+		if (totalProcesses >= MAX_PCB_TOTAL) {
+			printf("Reached max PCBs, ending Scheduler.\r\n");
+			break;
+		}
+		printf("Iteration: %d\r\n", iterationCount);
+		if (!(iterationCount % RESET_COUNT)) {
+			printf("\r\nRESETTING MLFQ\r\n");
+			resetMLFQ(thisScheduler);
+		}
+		totalProcesses += makePCBList(thisScheduler);		
+		
+		if (totalProcesses > 1) {
+			pc++; //= runProcess(pc, currQuantumSize);
+			sysstack = pc;
+			terminate(thisScheduler); 
+			if(quantum_tick >= currQuantumSize)
+			{
+				pseudoISR(thisScheduler);
+				quantum_tick = 0;
+			}
+			pc = thisScheduler->running->context->pc;
+		}
+		
+		printSchedulerState(thisScheduler);
+		iterationCount++;
+		quantum_tick++;
+		
+		
+	}
+	schedulerDeconstructor(thisScheduler);
+}*/
+
+
 /*
 	This function is our main loop. It creates a Scheduler object and follows the
 	steps a normal MLFQ Priority Scheduler would to "run" for a certain length of time,
@@ -156,4 +204,14 @@ int ioInterrupt(ReadyQueue the_blocked)
 	}
 	
 	return 0;
+}
+
+
+void main () {
+	setvbuf(stdout, NULL, _IONBF, 0);
+	srand((unsigned) time(&t));
+	sysstack = 0;
+	switchCalls = 0;
+	currQuantumSize = 0;
+	osLoop();
 }

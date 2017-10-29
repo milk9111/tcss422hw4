@@ -27,45 +27,154 @@ int io_timer = 0;
 time_t t;
 
 
-/*void timer () {
-	unsigned int pc = 0;
+
+/*
+	This function is our main loop. It creates a Scheduler object and follows the
+	steps a normal MLFQ Priority Scheduler would to "run" for a certain length of time,
+	check for all interrupt types, then call the ISR, scheduler,
+	dispatcher, and eventually an IRET to return to the top of the loop and start
+	with the new process.
+*/
+void osLoop () {
 	int totalProcesses = 0, iterationCount = 1;
 	Scheduler thisScheduler = schedulerConstructor();
-	for (;;) {
+	totalProcesses += makePCBList(thisScheduler);
+	printSchedulerState(thisScheduler);
+	for(;;) {
+		if (thisScheduler->running) { // In case the first makePCBList makes 0 PCBs
+			thisScheduler->running->context->pc++;
+			//printf("PC At start: %d\n", thisScheduler->running->context->pc);
+			if (timerInterrupt(iterationCount) == 1) {
+				pseudoISR(thisScheduler, IS_TIMER);
+				printf("Completed Timer Interrupt\n");
+				printSchedulerState(thisScheduler);
+				iterationCount++;
+			}
+			//printf("PC After timer check: %d\n", thisScheduler->running->context->pc);
+
+			if (ioTrap(thisScheduler->running) == 1) {
+				printf("Iteration: %d\r\n", iterationCount);
+				printf("Initiating I/O Trap\r\n");
+				printf("PC when I/O Trap is Reached: %d\r\n", thisScheduler->running->context->pc);
+				pseudoISR(thisScheduler, IS_IO_TRAP);
+				printf("Completed I/O Trap\n");
+				printSchedulerState(thisScheduler);
+				iterationCount++;
+			}
+			//printf("PC After trap check: %d\n", thisScheduler->running->context->pc);
+			if (ioInterrupt(thisScheduler->blocked) == 1) {
+				printf("Iteration: %d\r\n", iterationCount);
+				printf("Initiating I/O Interrupt\n");
+				pseudoISR(thisScheduler, IS_IO_INTERRUPT);
+				printf("Completed I/O Interrupt\n");
+				printSchedulerState(thisScheduler);
+				iterationCount++;
+			}
+			//printf("PC After interrupt check: %d\n", thisScheduler->running->context->pc);
+			if (thisScheduler->running && thisScheduler->running->context->pc == thisScheduler->running->max_pc) {
+				//printf("made it here\n");
+				//exit(0);
+				thisScheduler->running->context->pc = 0;
+				thisScheduler->running->term_count++;	//if terminate value is > 0
+			}
+			//printf("PC After pc reset check: %d\n", thisScheduler->running->context->pc);
+			
+		} else {
+			iterationCount++;
+		}
+	
+		// if running PCB's terminate == running PCB's term_count, then terminate (for real).
+		terminate(thisScheduler);
+		//printf("PC After terminate: %d\n", thisScheduler->running->context->pc);
+		if (!(iterationCount % RESET_COUNT)) {
+			printf("\r\nRESETTING MLFQ\r\n");
+			printf("iterationCount: %d\n", iterationCount);
+			resetMLFQ(thisScheduler);
+			totalProcesses += makePCBList (thisScheduler);
+			printSchedulerState(thisScheduler);
+			iterationCount = 1;
+		}
+		//printf("PC After mlfq reset check: %d\n", thisScheduler->running->context->pc);
 		if (totalProcesses >= MAX_PCB_TOTAL) {
 			printf("Reached max PCBs, ending Scheduler.\r\n");
 			break;
 		}
-		printf("Iteration: %d\r\n", iterationCount);
-		if (!(iterationCount % RESET_COUNT)) {
-			printf("\r\nRESETTING MLFQ\r\n");
-			resetMLFQ(thisScheduler);
-		}
-		totalProcesses += makePCBList(thisScheduler);		
-		
-		if (totalProcesses > 1) {
-			pc++; //= runProcess(pc, currQuantumSize);
-			sysstack = pc;
-			terminate(thisScheduler); 
-			if(quantum_tick >= currQuantumSize)
-			{
-				pseudoISR(thisScheduler);
-				quantum_tick = 0;
-			}
-			pc = thisScheduler->running->context->pc;
-		}
-		
-		printSchedulerState(thisScheduler);
-		iterationCount++;
-		quantum_tick++;
-		
-		
 	}
-	schedulerDeconstructor(thisScheduler);
-}*/
+}
 
 
+/*
+	Checks if the global quantum tick is greater than or equal to
+	the current quantum size for the running PCB. If so, then reset
+	the quantum tick to 0 and return 1 so the pseudoISR can occur.
+	If not, increase quantum tick by 1.
+*/
+int timerInterrupt(int iterationCount)
+{
+	if (quantum_tick >= currQuantumSize)
+	{
+		printf("Iteration: %d\r\n", iterationCount);
+		printf("Initiating Timer Interrupt\n");
+		printf("Current quantum tick: %d\r\n", quantum_tick);
+		quantum_tick = 0;
+		return 1;
+	}
+	else
+	{
+		quantum_tick++;
+		return 0;
+	}
+}
 
+
+/*
+	Checks if the current PCB's PC is one of the premade io_traps for this
+	PCB. If so, then return 1 so the pseudoISR can occur. If not, return 0.
+*/
+int ioTrap(PCB current)
+{
+	unsigned int the_pc = current->context->pc;
+	int c;
+	for (c = 0; c < TRAP_COUNT; c++)
+	{
+		if(the_pc == current->io_1_traps[c])
+		{
+			return 1;
+		}
+	}
+	
+	for (c = 0; c < TRAP_COUNT; c++)
+	{
+		if(the_pc == current->io_2_traps[c])
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
+int ioInterrupt(ReadyQueue the_blocked)
+{
+	//printf("here2\n");
+	//printf("currQuantumSize: %d, quantum_tick: %d\n", currQuantumSize, quantum_tick);
+	if (the_blocked->first_node != NULL && q_peek(the_blocked) != NULL)
+	{
+		PCB nextup = q_peek(the_blocked);
+		//printf("io_timer=%d   blocked_timer=%d\n", io_timer, nextup->blocked_timer);
+		if (io_timer >= nextup->blocked_timer)
+		{
+			io_timer = 0;
+			return 1;
+		}
+		else
+		{
+			io_timer++;
+		}
+	}
+	
+	return 0;
+}
 
 
 /*
@@ -136,15 +245,13 @@ unsigned int runProcess (unsigned int pc, int quantumSize) {
 
 void terminate(Scheduler theScheduler) {
 	//ran_term_num = rand() % RANDOM_VALUE;
-	/*	
-	if (theScheduler->running != NULL && ran_term_num <= MAX_VALUE_PRIVILEGED && isPrivileged(theScheduler->running) == 0) {
-		theScheduler->running->state = STATE_HALT;
-	}
-	*/
 	if(theScheduler->running != NULL && theScheduler->running->terminate > 0 && theScheduler->running->terminate == theScheduler->running->term_count)
 	{
 		theScheduler->running->state = STATE_HALT;
-		scheduling(-1, theScheduler);	
+		scheduling(IS_TERMINATING, theScheduler);	
+		//pseudoISR(theScheduler, IS_TERMINATING);
+		printf("terminating\n");
+		exit(0);
 	}
 	
 }
@@ -156,10 +263,10 @@ void terminate(Scheduler theScheduler) {
 	PCB to interrupted, saving the PC to the SysStack and calling the scheduler.
 */
 void pseudoISR (Scheduler theScheduler, int interruptType) {
-	if (theScheduler->running->state != STATE_HALT) {
+	if (theScheduler->running && theScheduler->running->state != STATE_HALT) {
 		theScheduler->running->state = STATE_INT;
 		theScheduler->interrupted = theScheduler->running;
-		theScheduler->running->context->pc = sysstack;
+		//theScheduler->running->context->pc = sysstack;
 	}
 	scheduling(interruptType, theScheduler);
 	pseudoIRET(theScheduler);
@@ -216,6 +323,7 @@ void printSchedulerState (Scheduler theScheduler) {
 	be the new last value of the 0 queue.
 */
 void resetMLFQ (Scheduler theScheduler) {
+	int allEmpty = 1;
 	for (int i = 1; i < NUM_PRIORITIES; i++) {
 		ReadyQueue curr = theScheduler->ready->queues[i];
 		if (!q_is_empty(curr)) {
@@ -223,6 +331,7 @@ void resetMLFQ (Scheduler theScheduler) {
 				theScheduler->ready->queues[0]->last_node->next = curr->first_node;
 				theScheduler->ready->queues[0]->last_node = curr->last_node;
 				theScheduler->ready->queues[0]->size += curr->size;
+				allEmpty = 0;
 			} else {
 				theScheduler->ready->queues[0]->first_node = curr->first_node;
 				theScheduler->ready->queues[0]->last_node = curr->last_node;
@@ -230,6 +339,10 @@ void resetMLFQ (Scheduler theScheduler) {
 			}
 			resetReadyQueue(curr);
 		}
+	}
+	
+	if (allEmpty) {
+		theScheduler->isNew = 1;
 	}
 }
 
@@ -251,13 +364,16 @@ void resetReadyQueue (ReadyQueue queue) {
 	calls the dispatcher to get the next PCB in the queue.
 */
 void scheduling (int interrupt_code, Scheduler theScheduler) {
-	if (interrupt_code == IS_TIMER && theScheduler->running->state != STATE_HALT) {
+	
+	if (interrupt_code == IS_TIMER/* && theScheduler->interrupted->state != STATE_HALT*/) {
 		theScheduler->interrupted->state = STATE_READY;
 		if (theScheduler->interrupted->priority < (NUM_PRIORITIES - 1)) {
 			theScheduler->interrupted->priority++;
 		} else {
 			theScheduler->interrupted->priority = 0;
 		}
+		printf("\r\nEnqueueing into MLFQ ");
+		toStringPCB(theScheduler->running, 0);
 		pq_enqueue(theScheduler->ready, theScheduler->interrupted);
 		
 		int index = isPrivileged(theScheduler->running);
@@ -266,26 +382,37 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 			privileged[index] = theScheduler->running;
 		}
 	}
-	else if (interrupt_code == IS_IO_TRAP && theScheduler->running->state != STATE_HALT)
+	else if (interrupt_code == IS_IO_TRAP/* && theScheduler->interrupted->state != STATE_HALT*/)
 	{
 		// Do I/O trap handling
-		int timer = currQuantumSize * (rand()%3+2) + rand()%500;
-		theScheduler->running->blocked_timer = timer;
-		theScheduler->running->state = STATE_WAIT;
-		q_enqueue(theScheduler->blocked, theScheduler->running);
+		int timer = (rand()%3);
+		theScheduler->interrupted->blocked_timer = timer;
+		theScheduler->interrupted->state = STATE_WAIT;
+		printf("\r\nEnqueueing into Blocked queue ");
+		toStringPCB(theScheduler->interrupted, 0);
+		//exit(0);
+		q_enqueue(theScheduler->blocked, theScheduler->interrupted);
 		
 		// schedule a new process
 	}
-	else if (interrupt_code == IS_IO_INTERRUPT && theScheduler->running->state != STATE_HALT)
+	else if (interrupt_code == IS_IO_INTERRUPT)
 	{
+		
 		// Do I/O interrupt handling
+		printf("\r\nEnqueueing into MLFQ from Blocked queue ");
+		toStringPCB(q_peek(theScheduler->blocked), 0);
 		pq_enqueue(theScheduler->ready, q_dequeue(theScheduler->blocked));
+		printSchedulerState(theScheduler);
+		//printf("stopping\n");
+		//exit(0);
 		theScheduler->running = theScheduler->interrupted;
 		theScheduler->running->state = STATE_RUNNING;
 		sysstack = theScheduler->running->context->pc;
 	}
 	
 	if (theScheduler->running->state == STATE_HALT) {
+		printf("\r\nEnqueueing into Killed queue ");
+		toStringPCB(q_peek(theScheduler->blocked), 0);
 		q_enqueue(theScheduler->killed, theScheduler->running);
 		theScheduler->running = NULL;
 		
@@ -331,7 +458,9 @@ void dispatcher (Scheduler theScheduler) {
 	This simply sets the running PCB's PC to the value in the SysStack;
 */
 void pseudoIRET (Scheduler theScheduler) {
-	theScheduler->running->context->pc = sysstack;
+	if (theScheduler->running) {
+		theScheduler->running->context->pc = sysstack;
+	}
 }
 
 

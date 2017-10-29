@@ -211,7 +211,7 @@ void toStringPCB(PCB thisPCB, int showCpu) {
 	}
 	
 	printf("priority: %d, ", thisPCB->priority);
-	printf("PC: 0x%04X, ", thisPCB->context->pc);
+	printf("PC: %d, ", thisPCB->context->pc);
 	
 	printf("\r\nMAX PC: %d\r\n", thisPCB->max_pc);
 	printf("io_1_traps\n");

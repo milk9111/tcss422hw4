@@ -32,8 +32,12 @@
 #define IS_TIMER 1
 #define IS_IO_TRAP 2
 #define IS_IO_INTERRUPT 3
+#define IS_TERMINATING -1
 #define SWITCH_CALLS 4
-
+#define MAX_VALUE_PRIVILEGED 15
+#define RANDOM_VALUE 101
+#define TOTAL_TERMINATED 10
+#define MAX_PRIVILEGE 4
 
 
 //structs
@@ -76,6 +80,14 @@ void terminate(Scheduler theScheduler);
 void resetMLFQ(Scheduler theScheduler);
 
 void resetReadyQueue (ReadyQueue queue);
+
+void osLoop ();
+
+int timerInterrupt (int);
+
+int ioTrap (PCB);
+
+int ioInterrupt (ReadyQueue);
 
 
 #endif
