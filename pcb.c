@@ -130,7 +130,10 @@ PCB PCB_create() {
  * Arguments: pcb: the pcb to free.
  */
 void PCB_destroy(/* in-out */ PCB pcb) {
+	if (pcb->context) {
 	  free(pcb->context);
+	  printf("breaks\n");
+	}
 	  free(pcb);// that thing
 }
 

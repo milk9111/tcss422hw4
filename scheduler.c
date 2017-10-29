@@ -246,14 +246,12 @@ unsigned int runProcess (unsigned int pc, int quantumSize) {
 
 
 void terminate(Scheduler theScheduler) {
-	//ran_term_num = rand() % RANDOM_VALUE;
 	if(theScheduler->running != NULL && theScheduler->running->terminate > 0 && theScheduler->running->terminate == theScheduler->running->term_count)
 	{
-		printf("Marking for termination...\n");
+		printf("Marking for termination...\r\n");
 		theScheduler->running->state = STATE_HALT;
-		printf("...\n");
+		printf("...\r\n");
 		scheduling(IS_TERMINATING, theScheduler);	
-		//pseudoISR(theScheduler, IS_TERMINATING);
 	}
 	
 }
@@ -299,13 +297,16 @@ void printSchedulerState (Scheduler theScheduler) {
 	
 	if (pq_peek(theScheduler->ready)) {
 		printf("Going to be running ");
-		toStringPCB(theScheduler->running, 0);
-		printf("\r\n");
+		if (theScheduler->running) {
+			toStringPCB(theScheduler->running, 0);
+		} else {
+			printf("\r\n");
+		}
 		printf("Next highest priority PCB ");
 		toStringPCB(pq_peek(theScheduler->ready), 0);
 		printf("\r\n\r\n\r\n");
 	} else {
-		printf("Going to be running next ");
+		printf("Going to be running ");
 		if (theScheduler->running) {
 			toStringPCB(theScheduler->running, 0);
 		} else {
@@ -366,7 +367,7 @@ void resetReadyQueue (ReadyQueue queue) {
 	calls the dispatcher to get the next PCB in the queue.
 */
 void scheduling (int interrupt_code, Scheduler theScheduler) {
-	
+	int fromKill = 0;
 	if (interrupt_code == IS_TIMER/* && theScheduler->interrupted->state != STATE_HALT*/) {
 		theScheduler->interrupted->state = STATE_READY;
 		if (theScheduler->interrupted->priority < (NUM_PRIORITIES - 1)) {
@@ -405,8 +406,6 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 		toStringPCB(q_peek(theScheduler->blocked), 0);
 		pq_enqueue(theScheduler->ready, q_dequeue(theScheduler->blocked));
 		printSchedulerState(theScheduler);
-		//printf("stopping\n");
-		//exit(0);
 		theScheduler->running = theScheduler->interrupted;
 		theScheduler->running->state = STATE_RUNNING;
 		sysstack = theScheduler->running->context->pc;
@@ -414,11 +413,9 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 	
 	if (theScheduler->running->state == STATE_HALT) {
 		printf("\r\nEnqueueing into Killed queue ");
-		//toStringPCB(q_peek(theScheduler->blocked), 0);
 		q_enqueue(theScheduler->killed, theScheduler->running);
 		theScheduler->running = NULL;
-		
-		//terminated++;
+		fromKill = 1;
 	}
 	
 	// I/O interrupt does not require putting a new process
@@ -429,14 +426,26 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 	}
 	
 	if (theScheduler->killed->size >= TOTAL_TERMINATED) {
-		printf("Before destroying processes\n");
-		printSchedulerState(theScheduler);
-		while(!q_is_empty(theScheduler->killed)) {
-			PCB_destroy(q_dequeue(theScheduler->killed));
+		PCB toKill;
+		printf("here\n");
+		if (!q_is_empty(theScheduler->killed)) {
+			toKill = q_dequeue(theScheduler->killed);
 		}
-		printf("After destroying processes\n");
-		printSchedulerState(theScheduler);
-		exit(0);
+		/*IT'S BREAKING HERE*/
+		if (!q_is_empty(theScheduler->killed)) {
+			while(!q_is_empty(theScheduler->killed)) {
+				printf("toKill is real: %d, pid: %d\n", toKill != NULL, toKill->pid);
+				if (theScheduler->killed->size > 1) {
+					PCB_destroy(toKill);
+				}
+				toKill = q_dequeue(theScheduler->killed);
+				printf("breaks3\n");
+			} 
+		} else {
+			PCB_destroy(toKill);
+		}
+		printf("here2\n");
+		//exit(0);
 	}
 
 	// I/O interrupt does not require putting a new process
