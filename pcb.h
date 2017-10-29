@@ -10,7 +10,7 @@
 #define TRAP_COUNT 4
 #define LARGEST_PC_POSSIBLE 200
 #define SMALLEST_PC_POSSIBLE 30
-#define MAX_TERM_COUNT 20
+#define MAX_TERM_COUNT 8
 
 /* The CPU state, values named as in the LC-3 processor. */
 typedef struct cpu_context {

@@ -90,7 +90,9 @@ void osLoop () {
 			printf("\r\nRESETTING MLFQ\r\n");
 			printf("iterationCount: %d\n", iterationCount);
 			resetMLFQ(thisScheduler);
-			totalProcesses += makePCBList (thisScheduler);
+			if (rand() % 500 <= 10) {
+				totalProcesses += makePCBList (thisScheduler);
+			}
 			printSchedulerState(thisScheduler);
 			iterationCount = 1;
 		}
@@ -250,8 +252,6 @@ void terminate(Scheduler theScheduler) {
 		theScheduler->running->state = STATE_HALT;
 		scheduling(IS_TERMINATING, theScheduler);	
 		//pseudoISR(theScheduler, IS_TERMINATING);
-		printf("terminating\n");
-		exit(0);
 	}
 	
 }
@@ -410,13 +410,13 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 		sysstack = theScheduler->running->context->pc;
 	}
 	
-	if (theScheduler->running->state == STATE_HALT) {
+	if (theScheduler->interrupted->state == STATE_HALT) {
 		printf("\r\nEnqueueing into Killed queue ");
-		toStringPCB(q_peek(theScheduler->blocked), 0);
-		q_enqueue(theScheduler->killed, theScheduler->running);
-		theScheduler->running = NULL;
+		//toStringPCB(q_peek(theScheduler->blocked), 0);
+		q_enqueue(theScheduler->killed, theScheduler->interrupted);
+		theScheduler->interrupted = NULL;
 		
-		terminated++;
+		//terminated++;
 	}
 	
 	// I/O interrupt does not require putting a new process
@@ -426,10 +426,15 @@ void scheduling (int interrupt_code, Scheduler theScheduler) {
 		theScheduler->running = pq_peek(theScheduler->ready);
 	}
 	
-	if (terminated >= TOTAL_TERMINATED) {
+	if (theScheduler->killed->size >= TOTAL_TERMINATED) {
+		printf("Before destroying processes\n");
+		printSchedulerState(theScheduler);
 		while(!q_is_empty(theScheduler->killed)) {
 			PCB_destroy(q_dequeue(theScheduler->killed));
 		}
+		printf("After destroying processes\n");
+		printSchedulerState(theScheduler);
+		exit(0);
 	}
 
 	// I/O interrupt does not require putting a new process
