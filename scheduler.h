@@ -23,12 +23,15 @@
 
 
 //defines
-#define MAX_PCB_TOTAL 60
+#define MAX_PCB_TOTAL 30
 #define RESET_COUNT 15
 #define MAX_PCB_IN_ROUND 5
 #define MAX_PC_JUMP 4000
 #define MIN_PC_JUMP 3000
 #define PC_JUMP_LIMIT 999
+#define MAKE_PCB_CHANCE_DOMAIN 100
+#define TIMER_RANGE 3
+#define MAKE_PCB_CHANCE_PERCENTAGE 10
 #define IS_TIMER 1
 #define IS_IO_TRAP 2
 #define IS_IO_INTERRUPT 3
