@@ -92,7 +92,7 @@ char q_is_empty(/* in */ ReadyQueue FIFOq) {
 int q_enqueue(/* in */ ReadyQueue FIFOq, /* in */ PCB pcb) {
     ReadyQueueNode new_node = malloc(sizeof(Node_s));
 
-    if (new_node != NULL) {
+    if (new_node != NULL && pcb != NULL) {
         new_node->pcb = pcb;
         new_node->next = NULL;
 

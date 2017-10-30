@@ -38,7 +38,7 @@ void initialize_data(/* in-out */ PCB pcb) {
 	pcb->max_pc = makeMaxPC();
 	pcb->creation = 0;
 	pcb->termination = 0;
-	pcb->terminate = 1;//rand() % MAX_TERM_COUNT;
+	pcb->terminate = rand() % MAX_TERM_COUNT;
 	pcb->term_count = 0;
   
 	//time_t t;
